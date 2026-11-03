@@ -82,8 +82,9 @@ Säkerhetskopiering: kopiera `radighet.db` tillsammans med `-wal`/`-shm` när tj
 
 ## Dataskydd
 
-E-postadressen är en personuppgift. Den används enbart för att skilja svar åt och visas aldrig i
-sammanställningen. Informera respondenterna om ändamål och lagringstid enligt organisationens GDPR-rutiner.
+E-postadressen är en personuppgift. Den används endast för att särskilja olika respondenter, och alla
+resultat anonymiseras när de presenteras – e-postadressen visas aldrig i sammanställningen. Detta framgår
+för respondenten direkt vid e-postfältet på startsidan.
 
 ## Licens
 
