@@ -1,0 +1,16 @@
+{
+  "name": "radighet",
+  "version": "1.0.0",
+  "description": "Självskattningsverktyg för digital rådighet i offentlig sektor (NOSAD)",
+  "type": "module",
+  "main": "src/server.js",
+  "license": "MIT",
+  "private": true,
+  "engines": {
+    "node": ">=22.13"
+  },
+  "scripts": {
+    "start": "node --disable-warning=ExperimentalWarning src/server.js",
+    "test": "node --disable-warning=ExperimentalWarning --test test/*.test.js"
+  }
+}

@@ -1,0 +1,23 @@
+# Används av DokPloy (Compose-tjänst) eller lokalt med `docker compose up -d`.
+services:
+  radighet:
+    build: .
+    restart: unless-stopped
+    environment:
+      PORT: 3000
+      DATABASE_PATH: /data/radighet.db
+      # Hemlig sökväg till adminsidan, t.ex. "admin-7f3c9a2e1b". Sätt i DokPloy under Environment.
+      ADMIN_PATH: ${ADMIN_PATH:?Sätt ADMIN_PATH}
+      # Valfritt extra skydd (HTTP Basic, valfritt användarnamn).
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+      # Minsta antal respondenter innan fördelningar visas på adminsidan.
+      ADMIN_MIN_GROUP_SIZE: ${ADMIN_MIN_GROUP_SIZE:-3}
+      # Sätt till true när sajten nås via HTTPS (rekommenderas).
+      COOKIE_SECURE: ${COOKIE_SECURE:-true}
+    volumes:
+      - radighet-data:/data
+    expose:
+      - "3000"
+
+volumes:
+  radighet-data:
