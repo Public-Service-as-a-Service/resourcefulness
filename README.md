@@ -36,6 +36,7 @@ Produktnamnen är exempel att utvärdera – kontrollera alltid juridisk kontrol
   Sammanställningen är anonymiserad: bara aggregat från varje respondents senaste skattning, inga e-postadresser,
   kommentarer i slumpad ordning utan koppling till person, och fördelningar visas först när minst
   `ADMIN_MIN_GROUP_SIZE` (standard 3) har svarat.
+  Längst ner finns en knapp som rensar hela databasen (alla respondenter och svar) efter att man skrivit RENSA.
 - Inga npm-beroenden: Node.js inbyggda `node:http` och `node:sqlite`. Ingen JavaScript i webbläsaren, strikt CSP.
 
 ## Köra lokalt

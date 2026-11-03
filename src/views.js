@@ -49,6 +49,7 @@ textarea{min-height:5rem}
 input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-visible,.level:focus-within{outline:3px solid var(--link-hover-color);outline-offset:2px}
 button,.button{font:inherit;display:inline-block;background:#333;color:#fff!important;border:0;border-radius:.8em .3em;padding:.5rem 1.2rem;cursor:pointer;text-decoration:none}
 button:hover,.button:hover{background:#000}
+button.danger{background:#b00020}button.danger:hover{background:#7a0016}
 .notice{border-left:5px solid #333;background:#fff;padding:.75rem 1rem;margin:1.5rem 0}
 .error{border-left-color:#b00020}
 fieldset{border:0;padding:0;margin:0 0 1.5rem}
@@ -288,8 +289,22 @@ function bars(dist, total, cls = '') {
 
 const fmt = (x) => (x == null ? '–' : x.toFixed(1).replace('.', ','));
 
-export function adminPage({ summary, minGroup }) {
+function clearForm(adminPath, error) {
+  return `<hr>
+<h3>Rensa databasen</h3>
+<p>Tar bort <strong>alla</strong> respondenter, e-postadresser, inloggningar och svar permanent. Det går inte att ångra – ta en säkerhetskopia först om du vill spara något.</p>
+${error ? `<div class="notice error" role="alert">${esc(error)}</div>` : ''}
+<form method="post" action="/${esc(adminPath)}/rensa">
+  <label for="confirm">Skriv RENSA för att bekräfta</label>
+  <input type="text" id="confirm" name="confirm" autocomplete="off" required pattern="RENSA">
+  <p style="margin-top:1rem"><button type="submit" class="danger">Rensa databasen</button></p>
+</form>`;
+}
+
+export function adminPage({ summary, minGroup, adminPath, cleared = false, clearError = '' }) {
   const { totals, areas, perMonth } = summary;
+  const status = cleared ? '<div class="notice" role="status">Databasen är rensad.</div>' : '';
+  const clear = clearForm(adminPath, clearError);
   const kpis = `<div class="kpis">
   <div class="kpi"><b>${totals.answered}</b><span>har skattat</span></div>
   <div class="kpi"><b>${totals.registered}</b><span>har registrerat sig</span></div>
@@ -298,8 +313,9 @@ export function adminPage({ summary, minGroup }) {
 </div>`;
 
   if (totals.answered < minGroup) {
-    return `<hr><h2>Sammanställning</h2>${kpis}
-<div class="notice">För att skydda respondenternas anonymitet visas fördelningar först när minst ${minGroup} personer har skattat.</div>`;
+    return `<hr><h2>Sammanställning</h2>${status}${kpis}
+<div class="notice">För att skydda respondenternas anonymitet visas fördelningar först när minst ${minGroup} personer har skattat.</div>
+${clear}`;
   }
 
   const overview = `<table>
@@ -337,10 +353,12 @@ ${
   return `<hr>
 <h2>Sammanställning</h2>
 <p class="meta">Anonymiserad: bygger på varje respondents senaste skattning. E-postadresser visas aldrig. Kommentarer visas utan koppling till person.</p>
+${status}
 ${kpis}
 ${overview}
 ${details}
-${months}`;
+${months}
+${clear}`;
 }
 
 export function notFoundPage() {
