@@ -227,20 +227,43 @@ export function createApp(options = {}) {
       );
     }
 
-    if (path === `/${config.adminPath}` && method === 'GET') {
+    const adminBase = `/${config.adminPath}`;
+    if (path === adminBase || path === `${adminBase}/rensa`) {
       if (!adminAuthorized(req)) {
         return send(res, 401, page('Inloggning krävs', '<hr><h2>Inloggning krävs</h2>'), {
           'WWW-Authenticate': 'Basic realm="Radighet admin", charset="UTF-8"',
         });
       }
-      const html = views.layout({
-        title: 'Sammanställning',
-        body: views.adminPage({ summary: store.summary(), minGroup: config.minGroup }),
-        user: null,
-        wide: true,
-        robots: 'noindex, nofollow',
-      });
-      return send(res, 200, html);
+      const adminHtml = (status, extra = {}) =>
+        send(
+          res,
+          status,
+          views.layout({
+            title: 'Sammanställning',
+            body: views.adminPage({
+              summary: store.summary(),
+              minGroup: config.minGroup,
+              adminPath: config.adminPath,
+              ...extra,
+            }),
+            user: null,
+            wide: true,
+            robots: 'noindex, nofollow',
+          }),
+        );
+
+      if (path === adminBase && method === 'GET') {
+        return adminHtml(200, { cleared: url.searchParams.has('rensad') });
+      }
+      if (path === `${adminBase}/rensa` && method === 'POST') {
+        const body = await readBody(req);
+        if ((body.get('confirm') ?? '').trim() !== 'RENSA') {
+          return adminHtml(400, { clearError: 'Skriv RENSA i rutan för att bekräfta. Inget har tagits bort.' });
+        }
+        store.clearAll();
+        console.log(`Databasen rensades via adminsidan ${new Date().toISOString()}`);
+        return redirect(res, `${adminBase}?rensad=1`);
+      }
     }
 
     return send(res, 404, page('Hittades inte', views.notFoundPage()));

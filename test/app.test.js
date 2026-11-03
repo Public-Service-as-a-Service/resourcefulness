@@ -134,3 +134,46 @@ test('adminsidan kan skyddas med lösenord', async () => {
   app2.store.close();
   rmSync(dir2, { recursive: true, force: true });
 });
+
+test('adminsidan kan rensa databasen efter bekräftelse', async () => {
+  const c = await login('rensa@example.se');
+  await submit(c, { arende_current: '3' });
+  assert.ok(app.store.summary().totals.submissions > 0);
+
+  let admin = await (await fetch(`${base}/hemlig-admin`)).text();
+  assert.match(admin, /action="\/hemlig-admin\/rensa"/);
+
+  // Fel bekräftelse – inget tas bort
+  let res = await fetch(`${base}/hemlig-admin/rensa`, { method: 'POST', body: new URLSearchParams({ confirm: 'ja' }) });
+  assert.equal(res.status, 400);
+  assert.ok(app.store.summary().totals.submissions > 0);
+
+  // Rätt bekräftelse
+  res = await fetch(`${base}/hemlig-admin/rensa`, {
+    method: 'POST',
+    body: new URLSearchParams({ confirm: 'RENSA' }),
+    redirect: 'manual',
+  });
+  assert.equal(res.status, 303);
+  const t = app.store.summary().totals;
+  assert.equal(t.registered, 0);
+  assert.equal(t.submissions, 0);
+  // Sessionen är borta
+  assert.equal((await fetch(`${base}/skatta`, { headers: { cookie: c }, redirect: 'manual' })).status, 303);
+  admin = await (await fetch(`${base}/hemlig-admin?rensad=1`)).text();
+  assert.match(admin, /Databasen är rensad/);
+});
+
+test('rensning kräver admin-lösenord när det är satt', async () => {
+  const dir2 = mkdtempSync(join(tmpdir(), 'radighet-'));
+  const app2 = createApp({ dbFile: join(dir2, 't.db'), adminPath: 'x', adminPassword: 'hemligt' });
+  await new Promise((r) => app2.server.listen(0, r));
+  const res = await fetch(`http://127.0.0.1:${app2.server.address().port}/x/rensa`, {
+    method: 'POST',
+    body: new URLSearchParams({ confirm: 'RENSA' }),
+  });
+  assert.equal(res.status, 401);
+  await new Promise((r) => app2.server.close(r));
+  app2.store.close();
+  rmSync(dir2, { recursive: true, force: true });
+});

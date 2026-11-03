@@ -126,6 +126,20 @@ class Store {
     return { createdAt: sub.created_at, byArea };
   }
 
+  // Tar bort alla respondenter, sessioner och svar (via ON DELETE CASCADE).
+  clearAll() {
+    const db = this.db;
+    db.exec('BEGIN IMMEDIATE');
+    try {
+      db.exec('DELETE FROM answers; DELETE FROM submissions; DELETE FROM sessions; DELETE FROM respondents;');
+      db.exec('COMMIT');
+    } catch (err) {
+      db.exec('ROLLBACK');
+      throw err;
+    }
+    db.exec('VACUUM; PRAGMA wal_checkpoint(TRUNCATE);');
+  }
+
   // --- Anonymiserad sammanställning ------------------------------------------
   // Bygger enbart på respektive respondents senaste inskick och returnerar
   // aldrig e-postadresser eller id:n.
