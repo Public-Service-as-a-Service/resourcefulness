@@ -142,7 +142,7 @@ export function startPage({ user, error = '', email = '' }) {
     : `<form method="post" action="/start" novalidate>
   ${error ? `<div class="notice error" role="alert">${esc(error)}</div>` : ''}
   <label for="email">Din e-postadress</label>
-  <p class="meta" id="email-hint" style="margin-bottom:.4rem">Används för att hålla isär svaren och för att du ska kunna återkomma och uppdatera din skattning. Den visas aldrig i sammanställningar.</p>
+  <p class="meta" id="email-hint" style="margin-bottom:.4rem">E-postadressen används endast för att särskilja olika respondenter (och så att du kan återkomma och uppdatera din skattning). Alla resultat anonymiseras när de presenteras – din e-postadress visas aldrig.</p>
   <input type="email" id="email" name="email" autocomplete="email" required maxlength="254" value="${esc(email)}" aria-describedby="email-hint"${error ? ' aria-invalid="true"' : ''}>
   <p style="margin-top:1rem"><button type="submit">Starta självskattningen</button></p>
 </form>`;
