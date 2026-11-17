@@ -90,10 +90,11 @@ tr:nth-child(even){background-color:#f2f2f2}
 @media (max-width:30rem){.bar-row{grid-template-columns:5.5rem 1fr 2rem}h1{font-size:1.9rem}h2{font-size:1.6rem}}
 `;
 
-export function layout({ title, body, user = null, current = '', wide = false, robots = '' }) {
+export function layout({ title, body, user = null, current = '', wide = false, robots = '', bodyClass = '', extraCss = '' }) {
   const nav = [
     ['/', 'Start'],
     ['/trappor', 'Mognadstrapporna'],
+    ['/om-radighet', 'Om rådighet'],
     ...(user ? [['/skatta', 'Självskattning'], ['/resultat', 'Mitt resultat']] : []),
   ];
   return `<!doctype html>
@@ -105,9 +106,9 @@ export function layout({ title, body, user = null, current = '', wide = false, r
 <meta name="description" content="Självskattningsverktyg för digital rådighet i offentlig sektor – från beroende till öppen källkod.">
 ${robots ? `<meta name="robots" content="${esc(robots)}">` : ''}
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-<style>${CSS}</style>
+<style>${CSS}${extraCss}</style>
 </head>
-<body${wide ? ' class="wide"' : ''}>
+<body${bodyClass || wide ? ` class="${bodyClass || 'wide'}"` : ''}>
 <header>
   <a class="logo" href="/"><mark>NOSAD</mark><span class="sub">Rådighet</span></a>
   <nav id="navbar" style="margin-top:1rem" aria-label="Huvudmeny">

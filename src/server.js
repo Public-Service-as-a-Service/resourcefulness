@@ -3,6 +3,7 @@ import { randomBytes, timingSafeEqual, createHash } from 'node:crypto';
 import { openDb } from './db.js';
 import { AREAS, LEVELS } from './ladders.js';
 import * as views from './views.js';
+import { aboutPage, DECK_CSS } from './presentation.js';
 
 const SESSION_COOKIE = 'radighet_session';
 const MAX_BODY = 64 * 1024;
@@ -158,6 +159,14 @@ export function createApp(options = {}) {
 
     if (path === '/trappor' && method === 'GET') {
       return send(res, 200, page('Mognadstrapporna', views.laddersPage(), { current: '/trappor' }));
+    }
+
+    if (path === '/om-radighet' && method === 'GET') {
+      return send(
+        res,
+        200,
+        page('Om rådighet', aboutPage(), { current: '/om-radighet', bodyClass: 'deck', extraCss: DECK_CSS }),
+      );
     }
 
     if (path === '/start' && method === 'POST') {

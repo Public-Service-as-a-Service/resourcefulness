@@ -28,6 +28,10 @@ Produktnamnen är exempel att utvärdera – kontrollera alltid juridisk kontrol
 
 ## Funktioner
 
+- Sidan **Om rådighet** (`/om-radighet`): en presentation i bildformat (13 bilder, c:a 10 minuter) om målbild,
+  principer, lösningsmönster och bedömning av rådighet med EU:s SEAL-nivåer som skala. Varje bild har talarmanus,
+  bläddras med ankarlänkar (ingen JavaScript) och skrivs ut som en bild per liggande A4. Innehållet finns i
+  [`src/presentation.js`](src/presentation.js).
 - Utseende som [nosad.se](https://nosad.se/) med NOSAD-loggan (markeringspenna) och favicon.
 - Inträde med e-postadress, som håller isär svaren. Respondenten kan återkomma och uppdatera sin skattning (formuläret förifylls).
 - Per område: nuläge (1–5 eller "vet inte"), mål om 2–3 år och valfri kommentar. Resultatsidan visar nästa steg.
