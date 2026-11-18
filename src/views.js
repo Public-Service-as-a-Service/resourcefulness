@@ -41,7 +41,7 @@ background-image:linear-gradient(to right,rgba(0,0,0,.8),rgba(0,0,0,.8) 4%,rgba(
 -webkit-box-decoration-break:clone;box-decoration-break:clone}
 .logo{text-decoration:none}
 .logo .sub{color:var(--text-color);margin-left:.9em;font-size:.9rem}
-#navbar ul{list-style-type:none;padding:0}#navbar ul li{display:inline;margin-right:10px}
+#navbar ul{list-style-type:none;padding:0;display:flex;flex-wrap:wrap;column-gap:.75rem;row-gap:.25rem;font-size:.9rem}#navbar ul li{margin:0;white-space:nowrap}
 #navbar ul li a{text-decoration:none}#navbar ul li a:hover{text-decoration:underline;text-underline-offset:.5em;text-decoration-thickness:3px}
 #navbar ul li a[aria-current]{text-decoration:underline;text-underline-offset:.5em;text-decoration-thickness:3px}
 label{display:block;font-weight:700;margin-bottom:.25rem}
