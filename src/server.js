@@ -4,6 +4,7 @@ import { openDb } from './db.js';
 import { AREAS, LEVELS } from './ladders.js';
 import * as views from './views.js';
 import { aboutPage, DECK_CSS } from './presentation.js';
+import { CHALLENGE_IDS, MAX_CHALLENGES, STRATEGY_IDS, strategyTarget } from './questions.js';
 
 const SESSION_COOKIE = 'radighet_session';
 const MAX_BODY = 64 * 1024;
@@ -200,24 +201,45 @@ export function createApp(options = {}) {
 
     if (path === '/skatta' && method === 'POST') {
       const body = await readBody(req);
-      const answers = AREAS.map((a) => ({
-        area: a.id,
-        current: parseLevel(body.get(`${a.id}_current`)),
-        target: parseLevel(body.get(`${a.id}_target`)),
-        comment: (body.get(`${a.id}_comment`) ?? '').trim().slice(0, 2000),
-      }));
-      const anyAnswered = answers.some((a) => a.current || a.target || a.comment);
-      if (!anyAnswered) {
+      const answers = AREAS.map((a) => {
+        const current = parseLevel(body.get(`${a.id}_current`));
+        const rawStrategy = body.get(`${a.id}_strategy`) ?? '';
+        const strategy = STRATEGY_IDS.includes(rawStrategy) ? rawStrategy : null;
+        const challenges = [...new Set(body.getAll(`${a.id}_challenges`))].filter((c) => CHALLENGE_IDS.includes(c));
+        return {
+          area: a.id,
+          title: a.title,
+          current,
+          strategy,
+          target: strategyTarget(strategy, current),
+          challenges,
+          comment: (body.get(`${a.id}_comment`) ?? '').trim().slice(0, 2000),
+        };
+      });
+      // Det ifyllda formuläret visas igen vid fel, så att inget går förlorat.
+      const posted = {
+        byArea: Object.fromEntries(
+          answers.map((a) => [
+            a.area,
+            { current_level: a.current, strategy: a.strategy, challenges: a.challenges, comment: a.comment },
+          ]),
+        ),
+      };
+      const tooMany = answers.filter((a) => a.challenges.length > MAX_CHALLENGES);
+      const anyAnswered = answers.some((a) => a.current || a.strategy || a.challenges.length || a.comment);
+      const error = tooMany.length
+        ? `Välj högst ${MAX_CHALLENGES} utmaningar per område (gäller: ${tooMany.map((a) => a.title).join(', ')}).`
+        : !anyAnswered
+          ? 'Besvara minst en fråga innan du sparar.'
+          : '';
+      if (error) {
         return send(
           res,
           400,
           page(
             'Självskattning',
-            views.assessPage({
-              user,
-              previous: store.latestAnswers(user.id),
-              error: 'Välj en nivå för minst ett område innan du sparar.',
-            }),
+            views.assessPage({ user, previous: anyAnswered ? posted : store.latestAnswers(user.id), error }),
+            { current: '/skatta' },
           ),
         );
       }
