@@ -34,7 +34,10 @@ Produktnamnen är exempel att utvärdera – kontrollera alltid juridisk kontrol
   [`src/presentation.js`](src/presentation.js).
 - Utseende som [nosad.se](https://nosad.se/) med NOSAD-loggan (markeringspenna) och favicon.
 - Inträde med e-postadress, som håller isär svaren. Respondenten kan återkomma och uppdatera sin skattning (formuläret förifylls).
-- Per område: nuläge (1–5 eller "vet inte"), mål om 2–3 år och valfri kommentar. Resultatsidan visar nästa steg.
+- Per område: nuläge (1–5 eller "vet inte"), strategi för de kommande två åren, upp till tre av de största
+  utmaningarna att nå full rådighet (t.ex. kostnader, säkerhetsskäl, avsaknad av exitplaner, inlåsning, avsaknad av
+  styrning) och valfri kommentar. Formuläret inleds med en kort guide, en enkel förklaring av stegen och en ordlista.
+  Frågorna och alternativen finns i [`src/questions.js`](src/questions.js). Resultatsidan visar nästa steg.
 - **Alla inskick sparas** (historik) i SQLite i **WAL-läge**.
 - **Dold adminsida** på en hemlig sökväg (`ADMIN_PATH`), valfritt även lösenordsskyddad (`ADMIN_PASSWORD`).
   Sammanställningen är anonymiserad: bara aggregat från varje respondents senaste skattning, inga e-postadresser,
