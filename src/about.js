@@ -45,12 +45,12 @@ const EU = [
   ],
   [
     'EU-kommissionens Cloud Sovereignty Framework',
-    '',
+    'https://europeanstack.com/guides/eu-cloud-sovereignty-framework',
     'Bedömer molntjänsters suveränitet i nivåerna SEAL-0–4. Används som lägstanivå i upphandling.',
   ],
   [
     'Cloud and AI Development Act (CADA)',
-    '',
+    'https://digital-strategy.ec.europa.eu/en/policies/cloud-and-ai-development-act',
     'Kommissionens förslag för att bygga ut europeisk moln- och AI-kapacitet.',
   ],
 ];
