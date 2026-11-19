@@ -171,16 +171,14 @@ test('adminsidan kan skyddas med lösenord', async () => {
   rmSync(dir2, { recursive: true, force: true });
 });
 
-test('sidan Om rådighet visar presentationen', async () => {
+test('sidan Om rådighet beskriver initiativet och styrande initiativ', async () => {
   const res = await fetch(`${base}/om-radighet`);
   assert.equal(res.status, 200);
   const html = await res.text();
-  assert.match(html, /<body class="deck">/);
   assert.match(html, /aria-current="page">Om rådighet/);
-  for (const text of ['Målbild', 'Sju principer', 'Lösningsmönster', 'SEAL-3', 'Talarmanus']) {
+  for (const text of ['Initiativet Rådig', 'EU-initiativ som styr', 'NIS2', 'Data Act', 'molnpolicy']) {
     assert.ok(html.includes(text), `saknar ${text}`);
   }
-  assert.match(html, /id="bild-13"/);
   assert.doesNotMatch(html, /<script/);
 });
 
