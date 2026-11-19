@@ -1,5 +1,5 @@
-// Följdfrågor per område: strategi för de kommande två åren och de största
-// utmaningarna att nå full rådighet.
+// Följdfrågor: strategi för de kommande två åren (per område) och de största
+// utmaningarna att nå full rådighet (en gemensam fråga för hela skattningen).
 
 import { LEVELS } from './ladders.js';
 
@@ -145,7 +145,17 @@ export function challengeById(id) {
 
 export function parseChallenges(stored) {
   if (!stored) return [];
-  return String(stored)
-    .split(',')
-    .filter((id) => CHALLENGE_IDS.includes(id));
+  return [...new Set(String(stored).split(','))].filter((id) => CHALLENGE_IDS.includes(id));
+}
+
+// Äldre skattningar hade utmaningar per område. Slå ihop dem till en gemensam
+// lista: de som valts i flest områden först, högst MAX_CHALLENGES stycken.
+export function mergeLegacyChallenges(storedPerArea) {
+  const counts = new Map();
+  for (const stored of storedPerArea) {
+    for (const id of parseChallenges(stored)) counts.set(id, (counts.get(id) ?? 0) + 1);
+  }
+  return CHALLENGE_IDS.filter((id) => counts.has(id))
+    .sort((x, y) => counts.get(y) - counts.get(x))
+    .slice(0, MAX_CHALLENGES);
 }

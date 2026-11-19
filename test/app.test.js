@@ -72,7 +72,7 @@ test('flöde: logga in, skatta, se resultat och adminsammanställning', async ()
   let res = await submit(c1, {
     arende_current: '1',
     arende_strategy: 'kravstalla',
-    arende_challenges: 'kostnad',
+    challenges: 'kostnad',
     arende_comment: 'Kör på MSSQL <script>',
     epost_current: '2',
     iam_current: '',
@@ -84,7 +84,7 @@ test('flöde: logga in, skatta, se resultat och adminsammanställning', async ()
   assert.match(result, /1 – Beroende/);
   assert.match(result, /Nästa steg – 2\. Medveten/);
   assert.match(result, /Ställa rådighetskrav/);
-  assert.match(result, /Största utmaningar: Kostnader/);
+  assert.match(result, /<h3>Största utmaningar<\/h3>\s*<ul><li><strong>Kostnader/);
 
   // Förifyllt formulär
   const form = await (await fetch(`${base}/skatta`, { headers: { cookie: c1 } })).text();
@@ -97,7 +97,7 @@ test('flöde: logga in, skatta, se resultat och adminsammanställning', async ()
   // Samma person skickar igen – bara senaste räknas
   await submit(c1, { arende_current: '2', epost_current: '2', ovriga_current: '4' });
   const c2 = await login('bo@region.se');
-  await submit(c2, { arende_current: '4', arende_strategy: 'samverka', arende_challenges: 'omvarld', epost_current: '3' });
+  await submit(c2, { arende_current: '4', arende_strategy: 'samverka', challenges: 'omvarld', epost_current: '3' });
 
   admin = await (await fetch(`${base}/hemlig-admin`)).text();
   assert.doesNotMatch(admin, /anna@kommun\.se|bo@region\.se/);
@@ -110,23 +110,29 @@ test('flöde: logga in, skatta, se resultat och adminsammanställning', async ()
   assert.doesNotMatch(admin, /<script>/);
   assert.equal(s.areas.arende.strategies.samverka, 1);
   assert.equal(s.areas.arende.avgTarget, 5); // anna skickade om utan strategi
-  assert.match(admin, /Största utmaningarna – alla områden/);
+  assert.match(admin, /Största utmaningarna/);
+  // anna skickade om utan utmaningar – bara bos val räknas
+  assert.equal(s.challenges.n, 1);
+  assert.equal(s.challenges.counts.omvarld, 1);
+  assert.equal(s.challenges.counts.kostnad, 0);
 });
 
 test('strategi och utmaningar sparas och förifylls', async () => {
   const c = await login('cecilia@kommun.se');
   const body = new URLSearchParams({ iam_current: '2', iam_strategy: 'behalla' });
-  body.append('iam_challenges', 'kompetens');
-  body.append('iam_challenges', 'inlasning');
+  body.append('challenges', 'kompetens');
+  body.append('challenges', 'inlasning');
   const res = await submit(c, body);
   assert.equal(res.status, 303);
   const latest = app.store.latestAnswers((await app.store.db.prepare("SELECT id FROM respondents WHERE email='cecilia@kommun.se'").get()).id);
   assert.equal(latest.byArea.iam.strategy, 'behalla');
   assert.equal(latest.byArea.iam.target_level, 2); // behålla = samma som i dag
-  assert.deepEqual(latest.byArea.iam.challenges, ['kompetens', 'inlasning']);
+  assert.deepEqual(latest.challenges, ['kompetens', 'inlasning']);
   const form = await (await fetch(`${base}/skatta`, { headers: { cookie: c } })).text();
   assert.match(form, /name="iam_strategy" value="behalla" checked/);
-  assert.match(form, /name="iam_challenges" value="kompetens" checked/);
+  assert.match(form, /name="challenges" value="kompetens" checked/);
+  assert.equal(form.match(/Vad ser ni som de största utmaningarna/g).length, 1);
+  assert.doesNotMatch(form, /iam_challenges/);
   assert.match(form, /Hur ser er strategi ut för de kommande två åren\?/);
   assert.match(form, /Vad ser ni som de största utmaningarna att nå full rådighet\?/);
 });
@@ -134,13 +140,13 @@ test('strategi och utmaningar sparas och förifylls', async () => {
 test('fler än tre utmaningar avvisas och formuläret behåller svaren', async () => {
   const c = await login('dan@kommun.se');
   const body = new URLSearchParams({ epost_current: '3' });
-  for (const id of ['kostnad', 'sakerhet', 'exit', 'styrning']) body.append('epost_challenges', id);
+  for (const id of ['kostnad', 'sakerhet', 'exit', 'styrning']) body.append('challenges', id);
   const res = await submit(c, body);
   assert.equal(res.status, 400);
   const html = await res.text();
   assert.match(html, /högst 3 utmaningar/);
   assert.match(html, /name="epost_current" value="3" checked/);
-  assert.match(html, /name="epost_challenges" value="styrning" checked/);
+  assert.match(html, /name="challenges" value="styrning" checked/);
 });
 
 test('tomt inskick avvisas', async () => {
@@ -180,6 +186,24 @@ test('sidan Om rådighet beskriver initiativet och styrande initiativ', async ()
     assert.ok(html.includes(text), `saknar ${text}`);
   }
   assert.doesNotMatch(html, /<script/);
+});
+
+test('äldre skattningar med utmaningar per område slås ihop till en gemensam lista', async () => {
+  const c = await login('gamla@kommun.se');
+  await submit(c, { arende_current: '2' });
+  const db = app.store.db;
+  const { id: rid } = db.prepare("SELECT id FROM respondents WHERE email='gamla@kommun.se'").get();
+  const { id: sid } = db.prepare('SELECT MAX(id) AS id FROM submissions WHERE respondent_id = ?').get(rid);
+  // Simulera ett inskick från före ändringen: utmaningar per område, inget på inskicket.
+  db.prepare('UPDATE submissions SET challenges = NULL WHERE id = ?').run(sid);
+  db.prepare("UPDATE answers SET challenges = 'kostnad,exit' WHERE submission_id = ? AND area = 'arende'").run(sid);
+  db.prepare("UPDATE answers SET challenges = 'exit,styrning' WHERE submission_id = ? AND area = 'epost'").run(sid);
+  db.prepare("UPDATE answers SET challenges = 'exit,kompetens' WHERE submission_id = ? AND area = 'iam'").run(sid);
+  const latest = app.store.latestAnswers(rid);
+  assert.equal(latest.challenges.length, 3);
+  assert.equal(latest.challenges[0], 'exit'); // vald i flest områden
+  const s = app.store.summary();
+  assert.ok(s.challenges.counts.exit >= 1);
 });
 
 test('äldre databas utan strategikolumner migreras', async () => {
