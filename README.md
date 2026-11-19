@@ -9,7 +9,7 @@ Ett webbverktyg där offentliga organisationer skattar sin **digitala rådighet*
 
 Varje område har en mognadstrappa i fem steg – från *Beroende* (t.ex. drift i Azure eller på egna
 Microsoft-servrar med MSSQL) till *Rådig* (öppen källkod i hela stacken, i egen eller samverkansdrift).
-Trapporna bygger på [Rådig – från beroende till rådighet](https://radig.codeberg.page/radig/)
+Trapporna bygger på [Rådig – från beroende till rådighet](https://radig.codefloe.page/radig/)
 (referensarkitektur, byteskarta, sju principer och kravkatalog för verksamhetssystem) och finns i
 [`src/ladders.js`](src/ladders.js) samt publikt på sidan `/trappor`.
 
@@ -28,7 +28,7 @@ Produktnamnen är exempel att utvärdera – kontrollera alltid juridisk kontrol
 
 ## Funktioner
 
-- Sidan **Om rådighet** (`/om-radighet`): en kort beskrivning av initiativet [Rådig](https://radig.codeberg.page/radig/)
+- Sidan **Om rådighet** (`/om-radighet`): en kort beskrivning av initiativet [Rådig](https://radig.codefloe.page/radig/)
   och de EU-, svenska och andra initiativ som styr arbetet mot rådighet. Innehållet finns i [`src/about.js`](src/about.js).
 - Utseende som [nosad.se](https://nosad.se/) med NOSAD-loggan (markeringspenna) och favicon.
 - Inträde med e-postadress, som håller isär svaren. Respondenten kan återkomma och uppdatera sin skattning (formuläret förifylls).

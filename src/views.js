@@ -145,7 +145,7 @@ ${body}
 <hr>
 <footer>
   <section>
-    <p class="small">Mognadstrapporna bygger på <a href="https://radig.codeberg.page/radig/">Rådig – från beroende till rådighet</a> (CC BY 4.0).</p>
+    <p class="small">Mognadstrapporna bygger på <a href="https://radig.codefloe.page/radig/">Rådig – från beroende till rådighet</a> (CC BY 4.0).</p>
     <p class="small">Ett verktyg i <a href="https://nosad.se/">NOSAD</a> – Nätverk för samverkan kring öppna data och öppen källkod. Källkoden är öppen.</p>
   </section>
 </footer>
@@ -340,7 +340,7 @@ ${saved ? '<div class="notice" role="status">Tack! Din självskattning är spara
 <p class="meta">Senast sparad ${esc(date)}. Mörka fält visar nuläget, randiga fält vart er strategi ungefär leder.</p>
 ${cards}
 <h3>Så kommer ni vidare</h3>
-<p>Rådig föreslår en ordning: <strong>stoppa inflödet</strong> av nya beroenden först, ta <strong>det osynliga före det synliga</strong>, bygg <strong>identiteten före allt som hänger på den</strong>, använd <strong>webbläsaren som brygga</strong> och byt klienten sist. Läs mer i <a href="https://radig.codeberg.page/radig/analys/07-principer/">Rådigs sju principer</a> och <a href="https://radig.codeberg.page/radig/mallar/kravkatalog-verksamhetssystem/">kravkatalogen för verksamhetssystem</a>.</p>
+<p>Rådig föreslår en ordning: <strong>stoppa inflödet</strong> av nya beroenden först, ta <strong>det osynliga före det synliga</strong>, bygg <strong>identiteten före allt som hänger på den</strong>, använd <strong>webbläsaren som brygga</strong> och byt klienten sist. Läs mer i <a href="https://radig.codefloe.page/radig/analys/07-principer/">Rådigs sju principer</a> och <a href="https://radig.codefloe.page/radig/mallar/kravkatalog-verksamhetssystem/">kravkatalogen för verksamhetssystem</a>.</p>
 <p><a class="button" href="/skatta">Uppdatera min skattning</a></p>`;
 }
 

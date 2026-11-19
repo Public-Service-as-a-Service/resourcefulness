@@ -1,7 +1,7 @@
 // Sidan »Om rådighet« – kort om Rådig-initiativet och de EU- och andra
 // initiativ som styr arbetet mot digital rådighet.
 
-const RADIG = 'https://radig.codeberg.page/radig/';
+const RADIG = 'https://radig.codefloe.page/radig/';
 
 export const ABOUT_CSS = `
 .about dl{margin:0 0 1.5rem}

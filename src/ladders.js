@@ -3,7 +3,7 @@
 // Varje område har fem nivåer, från starkt beroende av en enskild
 // (utomeuropeisk) leverantör till full rådighet med öppen källkod i egen
 // eller samverkansdrift. Trapporna bygger på Rådigs referensarkitektur,
-// byteskarta och kravkatalog: https://radig.codeberg.page/radig/
+// byteskarta och kravkatalog: https://radig.codefloe.page/radig/
 
 export const LEVELS = [1, 2, 3, 4, 5];
 
