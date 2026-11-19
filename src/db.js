@@ -3,7 +3,7 @@ import { mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { randomBytes } from 'node:crypto';
 import { AREA_IDS } from './ladders.js';
-import { CHALLENGE_IDS, STRATEGY_IDS, parseChallenges, strategyFromTarget } from './questions.js';
+import { CHALLENGE_IDS, STRATEGY_IDS, mergeLegacyChallenges, parseChallenges, strategyFromTarget } from './questions.js';
 
 const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 30; // 30 dagar
 
@@ -44,8 +44,10 @@ export function openDb(file) {
       comment       TEXT
     );
 
-    -- strategy: vald strategi för de kommande två åren (se questions.js).
-    -- challenges: upp till tre utmaningar, kommaseparerade id:n.
+    -- answers.strategy: vald strategi för de kommande två åren (se questions.js).
+    -- submissions.challenges: upp till tre utmaningar för hela skattningen,
+    --   kommaseparerade id:n. answers.challenges används bara av äldre skattningar
+    --   där utmaningarna valdes per område.
 
     CREATE INDEX IF NOT EXISTS idx_submissions_resp ON submissions(respondent_id, id);
     CREATE INDEX IF NOT EXISTS idx_answers_sub ON answers(submission_id);
@@ -54,6 +56,8 @@ export function openDb(file) {
   const cols = db.prepare('PRAGMA table_info(answers)').all().map((c) => c.name);
   if (!cols.includes('strategy')) db.exec('ALTER TABLE answers ADD COLUMN strategy TEXT');
   if (!cols.includes('challenges')) db.exec('ALTER TABLE answers ADD COLUMN challenges TEXT');
+  const subCols = db.prepare('PRAGMA table_info(submissions)').all().map((c) => c.name);
+  if (!subCols.includes('challenges')) db.exec('ALTER TABLE submissions ADD COLUMN challenges TEXT');
   return new Store(db);
 }
 
@@ -100,16 +104,16 @@ class Store {
 
   // --- Svar --------------------------------------------------------------------
 
-  saveSubmission(respondentId, answers) {
+  saveSubmission(respondentId, answers, challenges = []) {
     const db = this.db;
     db.exec('BEGIN IMMEDIATE');
     try {
       const { lastInsertRowid } = db
-        .prepare('INSERT INTO submissions (respondent_id) VALUES (?)')
-        .run(respondentId);
+        .prepare('INSERT INTO submissions (respondent_id, challenges) VALUES (?, ?)')
+        .run(respondentId, challenges.length ? challenges.join(',') : null);
       const ins = db.prepare(
-        `INSERT INTO answers (submission_id, area, current_level, target_level, strategy, challenges, comment)
-         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO answers (submission_id, area, current_level, target_level, strategy, comment)
+         VALUES (?, ?, ?, ?, ?, ?)`,
       );
       for (const a of answers) {
         ins.run(
@@ -118,7 +122,6 @@ class Store {
           a.current ?? null,
           a.target ?? null,
           a.strategy || null,
-          a.challenges?.length ? a.challenges.join(',') : null,
           a.comment || null,
         );
       }
@@ -132,7 +135,7 @@ class Store {
 
   latestAnswers(respondentId) {
     const sub = this.db
-      .prepare('SELECT id, created_at FROM submissions WHERE respondent_id = ? ORDER BY id DESC LIMIT 1')
+      .prepare('SELECT id, created_at, challenges FROM submissions WHERE respondent_id = ? ORDER BY id DESC LIMIT 1')
       .get(respondentId);
     if (!sub) return null;
     const rows = this.db
@@ -146,10 +149,12 @@ class Store {
         ...r,
         // Äldre svar har bara ett målsteg – tolka det som en strategi.
         strategy: r.strategy ?? strategyFromTarget(r.target_level, r.current_level),
-        challenges: parseChallenges(r.challenges),
       };
+      delete byArea[r.area].challenges;
     }
-    return { createdAt: sub.created_at, byArea };
+    const challenges =
+      sub.challenges != null ? parseChallenges(sub.challenges) : mergeLegacyChallenges(rows.map((r) => r.challenges));
+    return { createdAt: sub.created_at, byArea, challenges };
   }
 
   // --- Anonymiserad sammanställning ------------------------------------------
@@ -216,8 +221,10 @@ class Store {
       .all();
     const challengeRows = db
       .prepare(
-        `SELECT area, challenges FROM answers
-         WHERE submission_id IN (${latest}) AND challenges IS NOT NULL AND challenges <> ''`,
+        `SELECT s.id, s.challenges,
+                (SELECT group_concat(a.challenges, ';') FROM answers a
+                  WHERE a.submission_id = s.id AND a.challenges IS NOT NULL AND a.challenges <> '') AS legacy
+         FROM submissions s WHERE s.id IN (${latest})`,
       )
       .all();
     const perMonth = db
@@ -239,8 +246,6 @@ class Store {
         nUnknown: 0,
         strategies: Object.fromEntries(STRATEGY_IDS.map((sid) => [sid, 0])),
         nStrategy: 0,
-        challenges: Object.fromEntries(CHALLENGE_IDS.map((cid) => [cid, 0])),
-        nChallenges: 0,
         comments: [],
       };
     }
@@ -261,20 +266,16 @@ class Store {
       a.strategies[r.strategy] = r.n;
       a.nStrategy += r.n;
     }
-    // Utmaningar summeras både per område och totalt.
-    const challengeTotals = Object.fromEntries(CHALLENGE_IDS.map((cid) => [cid, 0]));
+    // Utmaningar räknas en gång per respondent (senaste skattningen).
+    const challenges = { counts: Object.fromEntries(CHALLENGE_IDS.map((cid) => [cid, 0])), n: 0 };
     for (const r of challengeRows) {
-      const a = areas[r.area];
-      if (!a) continue;
-      const ids = parseChallenges(r.challenges);
-      if (ids.length) a.nChallenges += 1;
-      for (const cid of ids) {
-        a.challenges[cid] += 1;
-        challengeTotals[cid] += 1;
-      }
+      const ids =
+        r.challenges != null ? parseChallenges(r.challenges) : mergeLegacyChallenges((r.legacy ?? '').split(';'));
+      if (ids.length) challenges.n += 1;
+      for (const cid of ids) challenges.counts[cid] += 1;
     }
     for (const r of comments) if (areas[r.area]) areas[r.area].comments.push(r.comment);
 
-    return { totals, areas, challengeTotals, perMonth };
+    return { totals, areas, challenges, perMonth };
   }
 }

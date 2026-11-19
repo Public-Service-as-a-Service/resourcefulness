@@ -205,31 +205,29 @@ export function createApp(options = {}) {
         const current = parseLevel(body.get(`${a.id}_current`));
         const rawStrategy = body.get(`${a.id}_strategy`) ?? '';
         const strategy = STRATEGY_IDS.includes(rawStrategy) ? rawStrategy : null;
-        const challenges = [...new Set(body.getAll(`${a.id}_challenges`))].filter((c) => CHALLENGE_IDS.includes(c));
         return {
           area: a.id,
           title: a.title,
           current,
           strategy,
           target: strategyTarget(strategy, current),
-          challenges,
           comment: (body.get(`${a.id}_comment`) ?? '').trim().slice(0, 2000),
         };
       });
+      const challenges = [...new Set(body.getAll('challenges'))].filter((c) => CHALLENGE_IDS.includes(c));
       // Det ifyllda formuläret visas igen vid fel, så att inget går förlorat.
       const posted = {
         byArea: Object.fromEntries(
-          answers.map((a) => [
-            a.area,
-            { current_level: a.current, strategy: a.strategy, challenges: a.challenges, comment: a.comment },
-          ]),
+          answers.map((a) => [a.area, { current_level: a.current, strategy: a.strategy, comment: a.comment }]),
         ),
+        challenges,
       };
-      const tooMany = answers.filter((a) => a.challenges.length > MAX_CHALLENGES);
-      const anyAnswered = answers.some((a) => a.current || a.strategy || a.challenges.length || a.comment);
-      const error = tooMany.length
-        ? `Välj högst ${MAX_CHALLENGES} utmaningar per område (gäller: ${tooMany.map((a) => a.title).join(', ')}).`
-        : !anyAnswered
+      const anyAnswered =
+        challenges.length > 0 || answers.some((a) => a.current || a.strategy || a.comment);
+      const error =
+        challenges.length > MAX_CHALLENGES
+          ? `Välj högst ${MAX_CHALLENGES} utmaningar.`
+          : !anyAnswered
           ? 'Besvara minst en fråga innan du sparar.'
           : '';
       if (error) {
@@ -243,7 +241,7 @@ export function createApp(options = {}) {
           ),
         );
       }
-      store.saveSubmission(user.id, answers);
+      store.saveSubmission(user.id, answers, challenges);
       return redirect(res, '/resultat?sparad=1');
     }
 

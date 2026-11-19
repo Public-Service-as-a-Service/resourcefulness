@@ -217,10 +217,10 @@ function strategyOption(area, s, checked) {
     </label>`;
 }
 
-function challengeOption(area, c, checked) {
-  const id = `${area.id}-c-${c.id}`;
+function challengeOption(c, checked) {
+  const id = `c-${c.id}`;
   return `<label class="level compact" for="${id}">
-      <input type="checkbox" id="${id}" name="${area.id}_challenges" value="${c.id}"${checked ? ' checked' : ''}>
+      <input type="checkbox" id="${id}" name="challenges" value="${c.id}"${checked ? ' checked' : ''}>
       <span><span class="name">${esc(c.title)}</span><span class="text">${esc(c.text)}</span></span>
     </label>`;
 }
@@ -229,7 +229,6 @@ export function assessPage({ user, previous, error = '' }) {
   const prev = previous?.byArea ?? {};
   const sections = AREAS.map((area, i) => {
     const p = prev[area.id] ?? {};
-    const chosen = new Set(p.challenges ?? []);
     return `<section aria-labelledby="h-${area.id}">
   <p class="meta" style="margin:0">Område ${i + 1} av ${AREAS.length}</p>
   <h2 id="h-${area.id}" style="margin-top:.25rem">${esc(area.title)}</h2>
@@ -249,19 +248,24 @@ export function assessPage({ user, previous, error = '' }) {
     ${STRATEGIES.map((st) => strategyOption(area, st, p.strategy === st.id)).join('\n    ')}
     ${strategyOption(area, null, previous && !p.strategy)}
   </fieldset>
-  <fieldset>
-    <legend class="q"><span class="qn">3</span>Vad ser ni som de största utmaningarna att nå full rådighet?</legend>
-    <p class="qhelp">Välj <strong>upp till ${MAX_CHALLENGES}</strong> alternativ – de som väger tyngst för området.</p>
-    <div class="choices">
-    ${CHALLENGES.map((c) => challengeOption(area, c, chosen.has(c.id))).join('\n    ')}
-    </div>
-  </fieldset>
-  <label class="q" for="${area.id}-comment"><span class="qn">4</span>Kommentar <span class="meta" style="font-weight:400">(valfri)</span></label>
+  <label class="q" for="${area.id}-comment"><span class="qn">3</span>Kommentar <span class="meta" style="font-weight:400">(valfri)</span></label>
   <p class="qhelp">T.ex. vilka system det gäller, andra hinder eller planer.</p>
   <textarea id="${area.id}-comment" name="${area.id}_comment" maxlength="2000">${esc(p.comment ?? '')}</textarea>
   <p class="meta">Undvik personuppgifter i kommentaren. Kommentarer kan visas i den anonymiserade sammanställningen.</p>
 </section>`;
   }).join('\n<hr>\n');
+
+  const chosen = new Set(previous?.challenges ?? []);
+  const challengeSection = `<section aria-labelledby="h-utmaningar">
+  <h2 id="h-utmaningar" style="margin-top:.25rem">Utmaningar</h2>
+  <fieldset>
+    <legend class="q">Vad ser ni som de största utmaningarna att nå full rådighet?</legend>
+    <p class="qhelp">Tänk på alla områden tillsammans. Välj <strong>upp till ${MAX_CHALLENGES}</strong> alternativ – de som väger tyngst.</p>
+    <div class="choices">
+    ${CHALLENGES.map((c) => challengeOption(c, chosen.has(c.id))).join('\n    ')}
+    </div>
+  </fieldset>
+</section>`;
 
   return `<hr>
 <h2>Självskattning</h2>
@@ -272,9 +276,9 @@ ${error ? `<div class="notice error" role="alert">${esc(error)}</div>` : ''}
   <ol>
     <li><strong>Nuläge</strong> – var ni står i dag på en trappa i fem steg.</li>
     <li><strong>Strategi</strong> – vad ni planerar för de kommande två åren.</li>
-    <li><strong>Utmaningar</strong> – upp till ${MAX_CHALLENGES} saker som gör det svårt att nå full rådighet.</li>
     <li><strong>Kommentar</strong> – frivilligt.</li>
   </ol>
+  <p style="margin-bottom:.5rem">Sist väljer du upp till ${MAX_CHALLENGES} <strong>utmaningar</strong> som gör det svårt att nå full rådighet – en gemensam fråga för alla områden.</p>
   <p style="margin-bottom:.5rem">Stegen betyder i korthet:</p>
   <ul class="scale">
     ${LEVELS.map((l) => `<li><span class="step">${l}</span><strong>${esc(LEVEL_NAMES[l])}:</strong> ${esc(LEVEL_PLAIN[l])}</li>`).join('\n    ')}
@@ -290,6 +294,8 @@ ${error ? `<div class="notice error" role="alert">${esc(error)}</div>` : ''}
 </div>
 <form method="post" action="/skatta">
 ${sections}
+<hr>
+${challengeSection}
 <hr>
 <p><button type="submit">Spara och visa resultat</button></p>
 </form>`;
@@ -324,11 +330,6 @@ export function resultPage({ user, latest, saved }) {
   <p style="margin:0">Strategi: <strong>${esc(strategyById(a.strategy)?.title ?? 'Ingen uttalad strategi')}</strong>${
     tgt ? ` <span class="meta">(leder ungefär till steg ${tgt} – ${esc(LEVEL_NAMES[tgt])})</span>` : ''
   }</p>
-  ${
-    a.challenges?.length
-      ? `<p style="margin:0">Största utmaningar: ${a.challenges.map((c) => esc(challengeById(c)?.title)).join(', ')}</p>`
-      : ''
-  }
   ${nextBlock}
 </div>`;
   }).join('\n');
@@ -339,6 +340,12 @@ export function resultPage({ user, latest, saved }) {
 ${saved ? '<div class="notice" role="status">Tack! Din självskattning är sparad.</div>' : ''}
 <p class="meta">Senast sparad ${esc(date)}. Mörka fält visar nuläget, randiga fält vart er strategi ungefär leder.</p>
 ${cards}
+${
+  latest.challenges?.length
+    ? `<h3>Största utmaningar</h3>
+<ul>${latest.challenges.map((c) => `<li><strong>${esc(challengeById(c)?.title)}</strong> – ${esc(challengeById(c)?.text)}</li>`).join('')}</ul>`
+    : ''
+}
 <h3>Så kommer ni vidare</h3>
 <p>Rådig föreslår en ordning: <strong>stoppa inflödet</strong> av nya beroenden först, ta <strong>det osynliga före det synliga</strong>, bygg <strong>identiteten före allt som hänger på den</strong>, använd <strong>webbläsaren som brygga</strong> och byt klienten sist. Läs mer i <a href="https://radig.codefloe.page/radig/analys/07-principer/">Rådigs sju principer</a> och <a href="https://radig.codefloe.page/radig/mallar/kravkatalog-verksamhetssystem/">kravkatalogen för verksamhetssystem</a>.</p>
 <p><a class="button" href="/skatta">Uppdatera min skattning</a></p>`;
@@ -386,7 +393,7 @@ const sortedChallenges = (counts) => [...CHALLENGES].sort((x, y) => (counts[y.id
 const fmt = (x) => (x == null ? '–' : x.toFixed(1).replace('.', ','));
 
 export function adminPage({ summary, minGroup }) {
-  const { totals, areas, challengeTotals, perMonth } = summary;
+  const { totals, areas, challenges, perMonth } = summary;
   const kpis = `<div class="kpis">
   <div class="kpi"><b>${totals.answered}</b><span>har skattat</span></div>
   <div class="kpi"><b>${totals.registered}</b><span>har registrerat sig</span></div>
@@ -416,8 +423,6 @@ ${AREAS.map((area) => {
 ${bars(a.current, a.nCurrent)}
 <h4 style="margin:1rem 0 .25rem">Strategi för de kommande två åren</h4>
 ${countBars(STRATEGIES, a.strategies, a.nStrategy, 't')}
-<h4 style="margin:1rem 0 .25rem">Största utmaningar <span class="meta">(${a.nChallenges} har svarat, upp till ${MAX_CHALLENGES} val var)</span></h4>
-${countBars(sortedChallenges(a.challenges), a.challenges, a.nChallenges)}
 ${
   a.comments.length
     ? `<details><summary>Kommentarer (${a.comments.length}, slumpad ordning)</summary><ul class="comments">${a.comments
@@ -427,10 +432,9 @@ ${
 }`;
   }).join('\n');
 
-  const challengeRespondents = Math.max(0, ...AREAS.map((area) => areas[area.id].nChallenges));
-  const challengeOverview = `<h3>Största utmaningarna – alla områden</h3>
-<p class="meta">Antal gånger varje utmaning valts, summerat över alla områden.</p>
-${countBars(sortedChallenges(challengeTotals), challengeTotals, Math.max(1, ...Object.values(challengeTotals)))}`;
+  const challengeOverview = `<h3>Största utmaningarna</h3>
+<p class="meta">${challenges.n} har svarat, upp till ${MAX_CHALLENGES} val var.</p>
+${countBars(sortedChallenges(challenges.counts), challenges.counts, challenges.n)}`;
 
   const months = perMonth.length
     ? `<h3>Inskick per månad</h3><table><thead><tr><th>Månad</th><th>Inskick</th></tr></thead><tbody>${perMonth
@@ -443,7 +447,7 @@ ${countBars(sortedChallenges(challengeTotals), challengeTotals, Math.max(1, ...O
 <p class="meta">Anonymiserad: bygger på varje respondents senaste skattning. E-postadresser visas aldrig. Kommentarer visas utan koppling till person.</p>
 ${kpis}
 ${overview}
-${challengeRespondents ? challengeOverview : ''}
+${challenges.n ? challengeOverview : ''}
 ${details}
 ${months}`;
 }
