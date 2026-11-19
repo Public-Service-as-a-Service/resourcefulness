@@ -401,7 +401,6 @@ export function aboutPage() {
   const total = SLIDES.length;
   return `<div class="deck-intro">
 <h1 style="margin-top:0">Om rådighet</h1>
-<p>En presentation på ungefär tio minuter om målbild, principer, lösningsmönster och hur rådighet kan bedömas. Varje bild har ett talarmanus. Skriv ut sidan (liggande A4) för att få en bild per sida.</p>
 </div>
 <nav aria-label="Bilder"><ol class="deck-toc">
 ${SLIDES.map((s, i) => `<li><a href="#bild-${i + 1}">${esc(s.toc)}</a></li>`).join('\n')}
