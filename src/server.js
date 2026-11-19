@@ -3,7 +3,7 @@ import { randomBytes, timingSafeEqual, createHash } from 'node:crypto';
 import { openDb } from './db.js';
 import { AREAS, LEVELS } from './ladders.js';
 import * as views from './views.js';
-import { aboutPage, DECK_CSS } from './presentation.js';
+import { aboutPage, ABOUT_CSS } from './about.js';
 import { CHALLENGE_IDS, MAX_CHALLENGES, STRATEGY_IDS, strategyTarget } from './questions.js';
 
 const SESSION_COOKIE = 'radighet_session';
@@ -166,7 +166,7 @@ export function createApp(options = {}) {
       return send(
         res,
         200,
-        page('Om rådighet', aboutPage(), { current: '/om-radighet', bodyClass: 'deck', extraCss: DECK_CSS }),
+        page('Om rådighet', aboutPage(), { current: '/om-radighet', extraCss: ABOUT_CSS }),
       );
     }
 
