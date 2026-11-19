@@ -100,7 +100,7 @@ export function aboutPage() {
 <p><a href="${RADIG}">Rådig – från beroende till rådighet</a> är ett öppet samverkansprojekt för kommuner, regioner och myndigheter. Föreningen Sambruk tog fram analysen som underlag för ledning och politik. Analysen beskriver hur en offentlig organisation kan minska sitt beroende av Microsoft, Google och de stora amerikanska molnleverantörerna, lager för lager och i rätt ordning.</p>
 <p class="quote">»Kan vi fortsätta fungera i morgon om leverantören stänger av, höjer priset eller tvingas lyda ett annat lands lag?«</p>
 <p>Målet är inte noll beroende. Målet är att inget enskilt beroende ska kunna stoppa verksamheten. Europeisk kontroll (SEAL-3) bedöms vara nåbar för nästan hela mjukvaru- och molnstacken inom ungefär fem år. Arbetet följer sju principer, bland annat att stoppa nya beroenden först, bygga identiteten före allt som hänger på den och bygga exitvägen innan den behövs. Det görs enligt en färdplan i sex faser.</p>
-<p>Rådig innehåller också fallstudier, juridiska analyser och mallar för kravkatalog, beroendekarta och exitplan. Allt är öppet: texten är CC BY 4.0 och koden EUPL-1.2. Bidrag tas emot via <a href="https://codeberg.org/radig/radig">Codeberg</a>.</p>
+<p>Rådig innehåller också fallstudier, juridiska analyser och mallar för kravkatalog, beroendekarta och exitplan. Allt är öppet: texten är CC BY 4.0 och koden EUPL-1.2. Bidrag tas emot via <a href="https://codefloe.com/Radig">Codefloe</a>.</p>
 <p>Det här verktyget bygger på Rådig. <a href="/trappor">Mognadstrapporna</a> och självskattningen hjälper er att se var ni står och vart ni vill.</p>
 
 <h2>EU-initiativ som styr</h2>
