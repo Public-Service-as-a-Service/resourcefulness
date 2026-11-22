@@ -41,6 +41,9 @@ Produktnamnen är exempel att utvärdera – kontrollera alltid juridisk kontrol
   Sammanställningen är anonymiserad: bara aggregat från varje respondents senaste skattning, inga e-postadresser,
   kommentarer i slumpad ordning utan koppling till person, och fördelningar visas först när minst
   `ADMIN_MIN_GROUP_SIZE` (standard 3) har svarat.
+- Längst ner på adminsidan kan man **hämta ut allt data som JSON** (`/<ADMIN_PATH>/export.json`, fullständigt
+  med e-postadresser, eller `?anonym=1` med bara e-postdomän) och göra en **fabriksåterställning** som tömmer
+  databasen (respondenter, inskick, svar och sessioner). Återställningen kräver att man skriver `RADERA` för att bekräfta.
 - Inga npm-beroenden: Node.js inbyggda `node:http` och `node:sqlite`. Ingen JavaScript i webbläsaren, strikt CSP.
 
 ## Köra lokalt

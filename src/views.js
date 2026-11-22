@@ -50,6 +50,7 @@ textarea{min-height:5rem}
 input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-visible,.level:focus-within{outline:3px solid var(--link-hover-color);outline-offset:2px}
 button,.button{font:inherit;display:inline-block;background:#333;color:#fff!important;border:0;border-radius:.8em .3em;padding:.5rem 1.2rem;cursor:pointer;text-decoration:none}
 button:hover,.button:hover{background:#000}
+button.danger{background:#b00020}button.danger:hover{background:#7a0016}
 .notice{border-left:5px solid #333;background:#fff;padding:.75rem 1rem;margin:1.5rem 0}
 .error{border-left-color:#b00020}
 fieldset{border:0;padding:0;margin:0 0 1.5rem}
@@ -392,7 +393,29 @@ const sortedChallenges = (counts) => [...CHALLENGES].sort((x, y) => (counts[y.id
 
 const fmt = (x) => (x == null ? '–' : x.toFixed(1).replace('.', ','));
 
-export function adminPage({ summary, minGroup }) {
+function adminTools(adminPath, resetError, resetDone) {
+  return `<hr>
+<h2 id="data">Data och fabriksåterställning</h2>
+${resetDone ? '<div class="notice" role="status">Fabriksåterställningen är klar. Databasen är tom.</div>' : ''}
+<h3>Hämta ut data</h3>
+<p>Ladda ner allt insamlat material som JSON, till exempel som säkerhetskopia innan du nollställer.</p>
+<p><a class="button" href="${esc(adminPath)}/export.json" download>Hämta allt (JSON)</a>
+<a class="button" href="${esc(adminPath)}/export.json?anonym=1" download>Hämta anonymiserat (JSON)</a></p>
+<p class="meta">Den fullständiga exporten innehåller e-postadresser (personuppgifter) och alla kommentarer. Den anonymiserade ersätter e-postadresserna med enbart e-postdomänen. Kommentarer kan fortfarande innehålla uppgifter som pekar ut någon.</p>
+<h3>Fabriksåterställning</h3>
+<div class="notice error">
+<p><strong>Raderar allt:</strong> alla respondenter, inskick, svar och inloggningar. Det går inte att ångra. Hämta ut datat ovan först.</p>
+${resetError ? `<p role="alert"><strong>${esc(resetError)}</strong></p>` : ''}
+<form method="post" action="${esc(adminPath)}/fabriksaterstallning">
+<label for="confirm">Skriv <strong>RADERA</strong> för att bekräfta</label>
+<input type="text" id="confirm" name="confirm" autocomplete="off" required pattern="RADERA">
+<p><button type="submit" class="danger">Fabriksåterställ (töm databasen)</button></p>
+</form>
+</div>`;
+}
+
+export function adminPage({ summary, minGroup, adminPath = '', resetError = '', resetDone = false }) {
+  const tools = adminTools(adminPath, resetError, resetDone);
   const { totals, areas, challenges, perMonth } = summary;
   const kpis = `<div class="kpis">
   <div class="kpi"><b>${totals.answered}</b><span>har skattat</span></div>
@@ -403,7 +426,8 @@ export function adminPage({ summary, minGroup }) {
 
   if (totals.answered < minGroup) {
     return `<hr><h2>Sammanställning</h2>${kpis}
-<div class="notice">För att skydda respondenternas anonymitet visas fördelningar först när minst ${minGroup} personer har skattat.</div>`;
+<div class="notice">För att skydda respondenternas anonymitet visas fördelningar först när minst ${minGroup} personer har skattat.</div>
+${tools}`;
   }
 
   const overview = `<table>
@@ -449,7 +473,8 @@ ${kpis}
 ${overview}
 ${challenges.n ? challengeOverview : ''}
 ${details}
-${months}`;
+${months}
+${tools}`;
 }
 
 export function notFoundPage() {

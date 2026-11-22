@@ -8,6 +8,7 @@ import { CHALLENGE_IDS, MAX_CHALLENGES, STRATEGY_IDS, strategyTarget } from './q
 
 const SESSION_COOKIE = 'radighet_session';
 const MAX_BODY = 64 * 1024;
+export const RESET_CONFIRM_WORD = 'RADERA';
 const EMAIL_RE = /^[^\s@<>()[\]\\,;:"]+@[^\s@<>()[\]\\,;:"]+\.[^\s@<>()[\]\\,;:"]{2,}$/;
 
 const SECURITY_HEADERS = {
@@ -256,20 +257,59 @@ export function createApp(options = {}) {
       );
     }
 
-    if (path === `/${config.adminPath}` && method === 'GET') {
+    const adminBase = `/${config.adminPath}`;
+    const adminRoutes = [adminBase, `${adminBase}/export.json`, `${adminBase}/fabriksaterstallning`];
+    if (adminRoutes.includes(path)) {
       if (!adminAuthorized(req)) {
         return send(res, 401, page('Inloggning krävs', '<hr><h2>Inloggning krävs</h2>'), {
           'WWW-Authenticate': 'Basic realm="Radighet admin", charset="UTF-8"',
         });
       }
-      const html = views.layout({
-        title: 'Sammanställning',
-        body: views.adminPage({ summary: store.summary(), minGroup: config.minGroup }),
-        user: null,
-        wide: true,
-        robots: 'noindex, nofollow',
-      });
-      return send(res, 200, html);
+      const adminPage = (status, { error = '', reset = false } = {}) =>
+        send(
+          res,
+          status,
+          views.layout({
+            title: 'Sammanställning',
+            body: views.adminPage({
+              summary: store.summary(),
+              minGroup: config.minGroup,
+              adminPath: adminBase,
+              resetError: error,
+              resetDone: reset,
+            }),
+            user: null,
+            wide: true,
+            robots: 'noindex, nofollow',
+          }),
+        );
+
+      if (path === adminBase && method === 'GET') {
+        return adminPage(200, { reset: url.searchParams.has('nollstalld') });
+      }
+
+      if (path === `${adminBase}/export.json` && method === 'GET') {
+        const anonymous = url.searchParams.get('anonym') === '1';
+        const data = store.exportAll({ anonymous });
+        const stamp = data.exportedAt.slice(0, 19).replace(/[:T]/g, '-');
+        res.writeHead(200, {
+          'Content-Type': 'application/json; charset=utf-8',
+          'Content-Disposition': `attachment; filename="radighet-${anonymous ? 'anonym-' : ''}${stamp}.json"`,
+          'Cache-Control': 'no-store',
+          ...SECURITY_HEADERS,
+        });
+        return res.end(JSON.stringify(data, null, 2));
+      }
+
+      if (path === `${adminBase}/fabriksaterstallning` && method === 'POST') {
+        const body = await readBody(req);
+        if ((body.get('confirm') ?? '').trim() !== RESET_CONFIRM_WORD) {
+          return adminPage(400, { error: `Skriv ${RESET_CONFIRM_WORD} i fältet för att bekräfta. Inget har raderats.` });
+        }
+        store.factoryReset();
+        console.log('Fabriksåterställning genomförd: databasen har tömts.');
+        return redirect(res, `${adminBase}?nollstalld=1`);
+      }
     }
 
     return send(res, 404, page('Hittades inte', views.notFoundPage()));
