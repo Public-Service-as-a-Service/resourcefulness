@@ -157,6 +157,61 @@ class Store {
     return { createdAt: sub.created_at, byArea, challenges };
   }
 
+  // --- Export och fabriksåterställning ---------------------------------------
+
+  // Hela databasens innehåll (utom sessioner) som ett JSON-vänligt objekt.
+  // Med anonymous = true ersätts e-postadresser med enbart e-postdomänen.
+  exportAll({ anonymous = false } = {}) {
+    const db = this.db;
+    const respondents = db.prepare('SELECT id, email, created_at FROM respondents ORDER BY id').all();
+    const submissions = db
+      .prepare('SELECT id, respondent_id, created_at, challenges FROM submissions ORDER BY id')
+      .all();
+    const answers = db
+      .prepare(
+        `SELECT submission_id, area, current_level, target_level, strategy, challenges, comment
+         FROM answers ORDER BY submission_id, id`,
+      )
+      .all();
+    const bySubmission = new Map();
+    for (const a of answers) {
+      const list = bySubmission.get(a.submission_id) ?? [];
+      const { submission_id: _sid, challenges, ...rest } = a;
+      list.push(challenges ? { ...rest, challenges: parseChallenges(challenges) } : rest);
+      bySubmission.set(a.submission_id, list);
+    }
+    return {
+      exportedAt: new Date().toISOString(),
+      anonymous,
+      respondents: respondents.map((r) => ({
+        id: r.id,
+        ...(anonymous ? { domain: r.email.slice(r.email.indexOf('@') + 1) } : { email: r.email }),
+        createdAt: r.created_at,
+      })),
+      submissions: submissions.map((s) => ({
+        id: s.id,
+        respondentId: s.respondent_id,
+        createdAt: s.created_at,
+        challenges: s.challenges ? parseChallenges(s.challenges) : [],
+        answers: bySubmission.get(s.id) ?? [],
+      })),
+    };
+  }
+
+  // Tömmer databasen helt: respondenter, sessioner, inskick och svar.
+  factoryReset() {
+    const db = this.db;
+    db.exec('BEGIN IMMEDIATE');
+    try {
+      db.exec('DELETE FROM answers; DELETE FROM submissions; DELETE FROM sessions; DELETE FROM respondents;');
+      db.exec('COMMIT');
+    } catch (err) {
+      db.exec('ROLLBACK');
+      throw err;
+    }
+    db.exec('VACUUM');
+  }
+
   // --- Anonymiserad sammanställning ------------------------------------------
   // Bygger enbart på respektive respondents senaste inskick och returnerar
   // aldrig e-postadresser eller id:n.

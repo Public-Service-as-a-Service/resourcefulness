@@ -225,3 +225,86 @@ test('äldre databas utan strategikolumner migreras', async () => {
   store.close();
   rmSync(dir3, { recursive: true, force: true });
 });
+
+test('admin: export som JSON och fabriksåterställning', async () => {
+  const dir3 = mkdtempSync(join(tmpdir(), 'radighet-'));
+  const app3 = createApp({ dbFile: join(dir3, 't.db'), adminPath: 'adm', adminPassword: 'pw' });
+  await new Promise((r) => app3.server.listen(0, r));
+  const b = `http://127.0.0.1:${app3.server.address().port}`;
+  const auth = { authorization: `Basic ${Buffer.from('admin:pw').toString('base64')}` };
+  try {
+    const login3 = await fetch(`${b}/start`, {
+      method: 'POST',
+      body: new URLSearchParams({ email: 'cia@kommun.se' }),
+      redirect: 'manual',
+    });
+    const cookie = login3.headers.get('set-cookie').split(';')[0];
+    await fetch(`${b}/skatta`, {
+      method: 'POST',
+      headers: { cookie },
+      body: new URLSearchParams({ arende_current: '3', arende_comment: 'Hej', challenges: 'kostnad' }),
+      redirect: 'manual',
+    });
+
+    // Knappen finns längst ner på adminsidan
+    const admin = await (await fetch(`${b}/adm`, { headers: auth })).text();
+    assert.match(admin, /Fabriksåterställ/);
+    assert.ok(admin.lastIndexOf('Fabriksåterställ') > admin.lastIndexOf('Sammanställning'));
+    assert.match(admin, /href="\/adm\/export\.json"/);
+
+    // Export kräver inloggning
+    assert.equal((await fetch(`${b}/adm/export.json`)).status, 401);
+    const exp = await fetch(`${b}/adm/export.json`, { headers: auth });
+    assert.equal(exp.status, 200);
+    assert.match(exp.headers.get('content-type'), /application\/json/);
+    assert.match(exp.headers.get('content-disposition'), /attachment; filename="radighet-/);
+    const data = await exp.json();
+    assert.equal(data.respondents[0].email, 'cia@kommun.se');
+    assert.equal(data.submissions.length, 1);
+    assert.deepEqual(data.submissions[0].challenges, ['kostnad']);
+    assert.equal(data.submissions[0].answers.find((a) => a.area === 'arende').comment, 'Hej');
+
+    const anon = await (await fetch(`${b}/adm/export.json?anonym=1`, { headers: auth })).json();
+    assert.equal(anon.respondents[0].domain, 'kommun.se');
+    assert.doesNotMatch(JSON.stringify(anon), /cia@/);
+
+    // Fel bekräftelse raderar inget
+    let res = await fetch(`${b}/adm/fabriksaterstallning`, {
+      method: 'POST',
+      headers: auth,
+      body: new URLSearchParams({ confirm: 'radera?' }),
+      redirect: 'manual',
+    });
+    assert.equal(res.status, 400);
+    assert.equal(app3.store.summary().totals.registered, 1);
+
+    // Utan lösenord går det inte
+    res = await fetch(`${b}/adm/fabriksaterstallning`, {
+      method: 'POST',
+      body: new URLSearchParams({ confirm: 'RADERA' }),
+      redirect: 'manual',
+    });
+    assert.equal(res.status, 401);
+
+    res = await fetch(`${b}/adm/fabriksaterstallning`, {
+      method: 'POST',
+      headers: auth,
+      body: new URLSearchParams({ confirm: 'RADERA' }),
+      redirect: 'manual',
+    });
+    assert.equal(res.status, 303);
+    assert.equal(res.headers.get('location'), '/adm?nollstalld=1');
+    const t = app3.store.summary().totals;
+    assert.equal(t.registered, 0);
+    assert.equal(t.submissions, 0);
+    // Sessionen är borta
+    const skatta = await fetch(`${b}/skatta`, { headers: { cookie }, redirect: 'manual' });
+    assert.equal(skatta.status, 303);
+    const after = await (await fetch(`${b}/adm?nollstalld=1`, { headers: auth })).text();
+    assert.match(after, /Fabriksåterställningen är klar/);
+  } finally {
+    await new Promise((r) => app3.server.close(r));
+    app3.store.close();
+    rmSync(dir3, { recursive: true, force: true });
+  }
+});
